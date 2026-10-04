@@ -1,0 +1,1 @@
+﻿using SyWater.Consumption.Application.Readings;namespace SyWater.Consumption.Application.Ports.In;public interface IRecordReadingUseCase{    Task<bool> ExecuteAsync(ReadingReceivedEvent reading, CancellationToken ct);}

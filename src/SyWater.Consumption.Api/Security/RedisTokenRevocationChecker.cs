@@ -1,0 +1,31 @@
+using StackExchange.Redis;
+
+namespace SyWater.Consumption.Api.Security;
+
+/// <summary>Answers "was this access token revoked in ms-iam?" (logout, password reset, deleted account).</summary>
+public interface ITokenRevocationChecker
+{
+    Task<bool> IsRevokedAsync(string? tokenId, string? userId, long? issuedAtEpochSeconds);
+}
+
+public sealed class RedisTokenRevocationChecker(IConnectionMultiplexer redis) : ITokenRevocationChecker
+{
+    public const string JtiPrefix = "iam:revoked:jti:";
+    public const string UserPrefix = "iam:revoked-before:";
+
+    public async Task<bool> IsRevokedAsync(string? tokenId, string? userId, long? issuedAtEpochSeconds)
+    {
+        var db = redis.GetDatabase();
+
+        if (!string.IsNullOrEmpty(tokenId) && await db.KeyExistsAsync(JtiPrefix + tokenId))
+            return true;
+
+        if (string.IsNullOrEmpty(userId) || issuedAtEpochSeconds is null)
+            return false;
+
+        var revokedBefore = await db.StringGetAsync(UserPrefix + userId);
+        return revokedBefore.HasValue
+               && long.TryParse(revokedBefore.ToString(), out var before)
+               && issuedAtEpochSeconds.Value <= before;
+    }
+}
