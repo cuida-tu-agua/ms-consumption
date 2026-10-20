@@ -16,6 +16,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<IRecordReadingUseCase, RecordReadingUseCase>();
         services.AddScoped<IGetConsumptionUseCase, GetConsumptionUseCase>();
+        services.AddScoped<IGetGoalProgressUseCase, GetGoalProgressUseCase>();
+        services.AddScoped<ISetMonthlyGoalUseCase, SetMonthlyGoalUseCase>();
         return services;
     }
 
@@ -28,6 +30,7 @@ public static class ServiceCollectionExtensions
         services.AddDbContext<ConsumptionDbContext>(options => options.UseSqlServer(connectionString));
         services.AddScoped<IReadingStore, EfReadingStore>();
         services.AddScoped<IConsumptionReader, EfConsumptionReader>();
+        services.AddScoped<IGoalStore, EfGoalStore>();
 
         var placesUrl = config["Services:PlacesBaseUrl"];
         if (string.IsNullOrWhiteSpace(placesUrl))
