@@ -26,6 +26,7 @@ public sealed class SqliteConsumptionDbContext(DbContextOptions options) : Consu
         base.OnModelCreating(modelBuilder);
         modelBuilder.Entity<ReadingEntity>().Property(r => r.Id).HasDefaultValueSql(null).ValueGeneratedOnAdd();
         modelBuilder.Entity<HourlyEntity>().Property(h => h.Id).HasDefaultValueSql(null).ValueGeneratedOnAdd();
+        modelBuilder.Entity<GoalEntity>().Property(g => g.Id).HasDefaultValueSql(null).ValueGeneratedOnAdd();
     }
 }
 

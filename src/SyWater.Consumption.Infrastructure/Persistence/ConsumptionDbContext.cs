@@ -7,6 +7,7 @@ public class ConsumptionDbContext(DbContextOptions options) : DbContext(options)
 {
     public DbSet<ReadingEntity> Readings => Set<ReadingEntity>();
     public DbSet<HourlyEntity> Hourly => Set<HourlyEntity>();
+    public DbSet<GoalEntity> Goals => Set<GoalEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -15,5 +16,8 @@ public class ConsumptionDbContext(DbContextOptions options) : DbContext(options)
 
         modelBuilder.Entity<HourlyEntity>().Property(h => h.Id).HasDefaultValueSql("NEWID()");
         modelBuilder.Entity<HourlyEntity>().HasIndex(h => new { h.PlaceId, h.HourStart }).IsUnique();       // UQ_hourly_place_hour
+
+        modelBuilder.Entity<GoalEntity>().Property(g => g.Id).HasDefaultValueSql("NEWID()");
+        modelBuilder.Entity<GoalEntity>().HasIndex(g => new { g.PlaceId, g.MonthStart }).IsUnique();         // UQ_goal_place_month
     }
 }
