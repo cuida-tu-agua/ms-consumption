@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using SyWater.Consumption.Application.Ports.Out;
 using SyWater.Consumption.Domain.Common;
 using SyWater.Consumption.Domain.Consumption;
+using SyWater.Consumption.Domain.Goals;
 
 namespace SyWater.Consumption.Api.Errors;
 
@@ -14,6 +15,7 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
             PlaceNotFoundException e => (StatusCodes.Status404NotFound, e.Code),
             InvalidPeriodException e => (StatusCodes.Status400BadRequest, e.Code),
             UnknownTimeZoneException e => (StatusCodes.Status400BadRequest, e.Code),
+            InvalidGoalTargetException e => (StatusCodes.Status400BadRequest, e.Code),
             ExternalServiceUnavailableException => (StatusCodes.Status503ServiceUnavailable, "service.unavailable"),
             UnauthorizedAccessException => (StatusCodes.Status401Unauthorized, "auth.invalid_token"),
             _ => (0, ""),
