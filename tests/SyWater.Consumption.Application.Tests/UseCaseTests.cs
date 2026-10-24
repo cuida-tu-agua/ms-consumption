@@ -32,10 +32,32 @@ internal sealed class FakeStore : IReadingStore, IConsumptionReader
 internal sealed class FakePlaces : IPlaceAccessChecker
 {
     public HashSet<Guid> Mine { get; } = [];
+    /// <summary>Places of other people where the user collaborates, with the permissions they were given.</summary>
+    public Dictionary<Guid, string[]> Shared { get; } = [];
     public bool Down { get; set; }
 
     public Task<bool> CanReadAsync(Guid placeId, CancellationToken ct) =>
         Down ? throw new ExternalServiceUnavailableException("place-service") : Task.FromResult(Mine.Contains(placeId));
+
+    public Task<PlaceAccess?> GetAccessAsync(Guid placeId, CancellationToken ct)
+    {
+        if (Down) throw new ExternalServiceUnavailableException("place-service");
+        if (Mine.Contains(placeId)) return Task.FromResult<PlaceAccess?>(new PlaceAccess("OWNER", []));
+        return Task.FromResult<PlaceAccess?>(Shared.TryGetValue(placeId, out var permissions)
+            ? new PlaceAccess("COLLABORATOR", permissions)
+            : null);
+    }
+}
+
+internal sealed class FakeGuestLinks : IGuestLinkResolver
+{
+    public Dictionary<string, Guid> Active { get; } = [];
+    public bool Down { get; set; }
+
+    public Task<Guid?> ResolvePlaceAsync(string token, CancellationToken ct) =>
+        Down
+            ? throw new ExternalServiceUnavailableException("place-service")
+            : Task.FromResult<Guid?>(Active.TryGetValue(token, out var placeId) ? placeId : null);
 }
 
 internal sealed class FakeClock(DateTime utcNow) : TimeProvider
