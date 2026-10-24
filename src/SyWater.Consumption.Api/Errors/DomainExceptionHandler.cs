@@ -13,6 +13,7 @@ public sealed class DomainExceptionHandler(IProblemDetailsService problemDetails
         var (status, code) = exception switch
         {
             PlaceNotFoundException e => (StatusCodes.Status404NotFound, e.Code),
+            GuestLinkNotFoundException e => (StatusCodes.Status404NotFound, e.Code),
             InvalidPeriodException e => (StatusCodes.Status400BadRequest, e.Code),
             UnknownTimeZoneException e => (StatusCodes.Status400BadRequest, e.Code),
             InvalidGoalTargetException e => (StatusCodes.Status400BadRequest, e.Code),
