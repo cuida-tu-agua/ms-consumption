@@ -33,7 +33,25 @@ public sealed class SqliteConsumptionDbContext(DbContextOptions options) : Consu
 public sealed class FakePlaceAccess : IPlaceAccessChecker
 {
     public HashSet<Guid> Mine { get; } = [];
+    /// <summary>Places of other people where the caller collaborates, with their permissions.</summary>
+    public Dictionary<Guid, string[]> Shared { get; } = [];
     public Task<bool> CanReadAsync(Guid placeId, CancellationToken ct) => Task.FromResult(Mine.Contains(placeId));
+
+    public Task<PlaceAccess?> GetAccessAsync(Guid placeId, CancellationToken ct)
+    {
+        if (Mine.Contains(placeId)) return Task.FromResult<PlaceAccess?>(new PlaceAccess("OWNER", []));
+        return Task.FromResult<PlaceAccess?>(Shared.TryGetValue(placeId, out var permissions)
+            ? new PlaceAccess("COLLABORATOR", permissions)
+            : null);
+    }
+}
+
+/// <summary>ms-places double for the guest links: the tokens that open a place right now.</summary>
+public sealed class FakeGuestLinks : IGuestLinkResolver
+{
+    public Dictionary<string, Guid> Active { get; } = [];
+    public Task<Guid?> ResolvePlaceAsync(string token, CancellationToken ct) =>
+        Task.FromResult<Guid?>(Active.TryGetValue(token, out var placeId) ? placeId : null);
 }
 
 public sealed class NoRevocations : ITokenRevocationChecker
@@ -52,6 +70,7 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
     private readonly string _publicKeyPath = Path.Combine(Path.GetTempPath(), $"iam-public-{Guid.NewGuid():N}.pem");
 
     public FakePlaceAccess Places { get; } = new();
+    public FakeGuestLinks GuestLinks { get; } = new();
     public NoRevocations Revocations { get; } = new();
 
     public ApiFactory()
@@ -76,6 +95,8 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
             services.RemoveAll<IPlaceAccessChecker>();
             services.AddSingleton<IPlaceAccessChecker>(Places);
+            services.RemoveAll<IGuestLinkResolver>();
+            services.AddSingleton<IGuestLinkResolver>(GuestLinks);
             services.RemoveAll<ITokenRevocationChecker>();
             services.AddSingleton<ITokenRevocationChecker>(Revocations);
         });

@@ -17,3 +17,7 @@ public sealed class PlaceNotFoundException(Guid placeId)
 /// <summary>A reading with impossible values (defense in depth: ms-devices already filters). Not HTTP.</summary>
 public sealed class InvalidReadingException(string reason)
     : DomainException("reading.invalid", reason);
+
+/// <summary>The guest link does not exist, was deactivated or its place was deleted (same answer on purpose). HTTP 404.</summary>
+public sealed class GuestLinkNotFoundException()
+    : DomainException("guest_link.not_found", "This link does not exist or is no longer active.");

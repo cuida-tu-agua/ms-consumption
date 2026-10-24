@@ -16,6 +16,7 @@ public static class ServiceCollectionExtensions
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<IRecordReadingUseCase, RecordReadingUseCase>();
         services.AddScoped<IGetConsumptionUseCase, GetConsumptionUseCase>();
+        services.AddScoped<IGetGuestConsumptionUseCase, GetGuestConsumptionUseCase>();
         services.AddScoped<IGetGoalProgressUseCase, GetGoalProgressUseCase>();
         services.AddScoped<ISetMonthlyGoalUseCase, SetMonthlyGoalUseCase>();
         return services;
@@ -43,6 +44,23 @@ public static class ServiceCollectionExtensions
             client.BaseAddress = new Uri(placesUrl.EndsWith('/') ? placesUrl : placesUrl + "/");
             client.Timeout = TimeSpan.FromSeconds(5);
         });
+
+        // Guest links (HU-040): ms-places says which place a token opens, authenticated with the key shared by the services.
+        // Without the key (a local run) no guest link opens anything: the endpoint answers 404 and the rest keeps working.
+        var internalKey = config["Internal:ApiKey"];
+        if (string.IsNullOrWhiteSpace(internalKey) || internalKey.Length < 24)
+        {
+            services.AddSingleton<IGuestLinkResolver, GuestLinksNotConfiguredResolver>();
+        }
+        else
+        {
+            services.AddHttpClient<IGuestLinkResolver, HttpGuestLinkResolver>((http, _) =>
+            {
+                http.BaseAddress = new Uri(placesUrl.EndsWith('/') ? placesUrl : placesUrl + "/");
+                http.Timeout = TimeSpan.FromSeconds(5);
+                return new HttpGuestLinkResolver(http, internalKey);
+            });
+        }
         return services;
     }
 

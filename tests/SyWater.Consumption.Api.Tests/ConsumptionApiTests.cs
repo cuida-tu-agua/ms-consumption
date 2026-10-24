@@ -93,4 +93,52 @@ public class ConsumptionApiTests : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal(code, (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("title").GetString());
     }
+
+    // ── HU-040 / HU-041 / HU-045: guests and collaborators ──────────────
+
+    [Fact]
+    public async Task A_collaborator_reads_the_consumption_of_a_place_shared_with_them()
+    {
+        var shared = Guid.NewGuid();
+        _factory.Places.Shared[shared] = ["VIEW_CONSUMPTION"];
+
+        var response = await Client().GetAsync($"/api/places/{shared}/consumption?period=day");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(shared, (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("placeId").GetGuid());
+    }
+
+    [Fact]
+    public async Task A_guest_with_an_active_link_reads_the_consumption_without_logging_in()
+    {
+        const string token = "an-active-guest-token-with-more-than-32-chars";
+        _factory.GuestLinks.Active[token] = _place;
+
+        var response = await _factory.CreateClient().GetAsync($"/api/guest/{token}/consumption?period=week&tz=America/Bogota");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var view = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("WEEK", view.GetProperty("period").GetString());
+    }
+
+    [Fact]
+    public async Task A_guest_link_that_opens_nothing_is_404_with_the_code()
+    {
+        var response = await _factory.CreateClient().GetAsync("/api/guest/a-token-that-was-never-created-0123456789/consumption");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        Assert.Equal("guest_link.not_found",
+            (await response.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("title").GetString());
+    }
+
+    [Fact]
+    public async Task The_guest_token_does_not_open_the_authenticated_endpoints()
+    {
+        const string token = "yet-another-active-token-with-more-than-32-chars";
+        _factory.GuestLinks.Active[token] = _place;
+
+        var response = await _factory.CreateClient().GetAsync($"/api/places/{_place}/consumption");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 }

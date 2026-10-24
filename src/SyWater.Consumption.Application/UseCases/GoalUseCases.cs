@@ -26,8 +26,7 @@ public sealed class GetGoalProgressUseCase(IPlaceAccessChecker places, IGoalStor
 
 /// <summary>
 /// HU-023. Order: target (400) → time zone (400) → the place is mine (404) → create or edit the goal of the current month.
-/// Today only the owner can open a place in ms-places, so "can read" is also "can set its goal" (INV-G003).
-/// When collaborators exist (E10) this needs an owner-only check.
+/// Only the owner sets the goal (INV-G003): CanReadAsync is true for the owner alone, collaborators are not included.
 /// </summary>
 public sealed class SetMonthlyGoalUseCase(IPlaceAccessChecker places, IGoalStore goals, IConsumptionReader reader,
     TimeProvider clock) : ISetMonthlyGoalUseCase
